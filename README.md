@@ -116,7 +116,7 @@ fGroups <-
 
 </details>
 
-Smith, C.A., Want, E.J., O'Maille, G., Abagyan, R. & Siuzdak, G. 2006. XCMS:  Processing Mass Spectrometry Data for Metabolite Profiling Using Nonlinear Peak Alignment, Matching, and Identification. Analytical Chemistry, 78, 779-787. 10.1021/ac051437y
+Smith, C.A., Want, E.J., O'Maille, G., Abagyan, R. & Siuzdak, G. 2006. XCMS:  Processing Mass Spectrometry Data for Metabolite Profiling Using Nonlinear Peak Alignment, Matching, and Identification. Analytical Chemistry, 78, 779-787. https://doi.org/10.1021/ac051437y
 
 #### Filtering
 
@@ -134,10 +134,125 @@ fGroups <-
     blankThreshold = 3,
     removeBlanks = TRUE
   )
-  ```
+```
 
 </details>
 
 #### NeatMS
 
-A table of feature parameters is exported and 
+A table of feature parameters is generated and exported for implementation in Python (see Documentation from authors). See [drewszabo/neatms.export](https://www.github.com/drewszabo/ntms.export) for updated code to produce data table that is compatable with this workflow.
+
+Gloaguen, Y., Kirwan, J.A. & Beule, D. 2022. Deep Learning-Assisted Peak Curation for Large-Scale LC-MS Metabolomics. Analytical Chemistry, 94, 4930-4937. https://doi.org/10.1021/acs.analchem.1c02220
+
+### 2. MS Peak Annotation
+  
+  #### mzR (via patRoon)
+  
+  Default mzR parameters to calculate the average peak lists were changed to better suit current workflows. May require further optimisation - eg. topMost = 250 significantly increases compute time.
+  
+  Filtering includes precursor isolation and MS2 abundance to clean spectra and significantly reduce object size.
+  
+  <details>
+  <summary>Show code</summary>
+
+```
+# Set parameters (mz window)
+avgFeatParams <- getDefAvgPListParams(
+  clusterMzWindow = 0.002,
+  topMost = 250,
+  minIntensityPre = 500,
+  minIntensityPost = 1000,
+  method = "hclust",
+  pruneMissingPrecursorMS = TRUE,
+  retainPrecursorMSMS = TRUE
+)
+
+
+# Calculate MS and MSMS peak lists from suspect screening
+mslists <- generateMSPeakLists(
+  fGroups,
+  "mzr",
+  maxMSRtWindow = 15,
+  precursorMzWindow = 0.4,
+  topMost = NULL,
+  avgFeatParams = avgFeatParams,
+  avgFGroupParams = avgFeatParams
+)
+
+
+# Filtering only top 99% MSMS peaks based on relative abundance
+mslists <- patRoon::filter(
+  mslists,
+  absMSIntThr = 1000,
+  relMSMSIntThr = 0.01,
+  withMSMS = TRUE,
+  minMSMSPeaks = 1,
+  retainPrecursorMSMS = TRUE,
+  isolatePrec = TRUE
+)
+```
+
+</details>
+    
+### 3. Compound Annotation
+    
+#### MassBank (via patRoon)
+    
+Requires latest database `.msp` download from MassBank repo
+    
+<details>
+  <summary>Show code</summary>
+
+```
+compoundsMB <-
+  generateCompounds(
+    fGroupsSusp,
+    mslists,
+    "library",
+    adduct = "[M+H]+",
+    MSLibrary = mslibrary,
+    minSim = 0.05,
+    absMzDev = 0.01,
+    spectrumType = "MS2"
+  )
+
+# Filter for minimum explained peaks and formula score
+compoundsMB <- patRoon::filter(compoundsMB, topMost = 1)
+
+# Export results as
+resultsMB <- patRoon::as.data.table(compoundsMB, fGroups = fGroups)
+```
+
+</details>
+  
+#### MetFrag
+  
+  Current issues with mass accuracy have required relatively high ppm deviations.
+  
+  <details>
+  <summary>Show code</summary>
+
+```
+compoundsMF <-
+  generateCompounds(
+    fGroupsSusp,
+    mslists,
+    "metfrag",
+    method = "CL",
+    topMost = 5,
+    dbRelMzDev = 25,
+    fragRelMzDev = 25,
+    adduct = "[M+H]+",
+    database = "pubchemlite"
+  )
+
+# Filter for minimum explained peaks and formula score
+compoundsMF <- patRoon::filter(compoundsMF, topMost = 1)
+
+# Export results as
+resultsMF <- patRoon::as.data.table(compoundsMF, fGroups = fGroups)
+
+write.csv(resultsMF, "resultsMF.csv")
+```
+
+</details>
