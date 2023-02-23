@@ -251,8 +251,6 @@ compoundsMF <- patRoon::filter(compoundsMF, topMost = 1)
 
 # Export results as
 resultsMF <- patRoon::as.data.table(compoundsMF, fGroups = fGroups)
-
-write.csv(resultsMF, "resultsMF.csv")
 ```
 
 </details>
