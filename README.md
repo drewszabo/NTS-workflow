@@ -208,6 +208,8 @@ mslists <- patRoon::filter(
     
 ### 3. Compound Annotation
     
+For each of the following library and in-silico matching, a minimum of 2 explained peaks is used as a filter to increase the confidence of annotation. In general, the score can be artificially inflated for a compound that only matches with one (or 0) fragment, due to limitations of the cosine (dot-product) scoring technique.
+    
 #### MassBank (via patRoon)
     
 Requires latest database `.msp` download from MassBank repo
@@ -229,11 +231,48 @@ compoundsMB <-
   )
 
 # Filter for minimum explained peaks and formula score
-compoundsMB <- patRoon::filter(compoundsMB, topMost = 1)
+compoundsMB <- patRoon::filter(compoundsMB, topMost = 1, minExplainedPeaks = 2)
 
 # Export results as
 resultsMB <- patRoon::as.data.table(compoundsMB, fGroups = fGroups)
 ```
+
+</details>
+
+#### SIRIUS CSIFingerID
+  
+Currently working with SIRIUS v5.6.3. Limiting the cores may not be necessary but can help if you need to use your computer while processing the data. Using the projectPath variable is also not necessary, although I find it useful to browse the raw SIRIUS results for troubleshooting.
+  
+<details>
+<summary>Show code</summary>
+
+```
+  siriusElements <- "CHONFP[8]B[11]Si[9]S[12]Cl[18]Se[2]Br[10]I[6]K[1]As[2]Na[1]"
+    
+  compoundsSIR <-
+  generateCompounds(
+    fGroupsTest,
+    mslists,
+    "sirius",
+    relMzDev = 5,
+    adduct = "[M+H]+",
+    fingerIDDatabase = "all",
+    topMost = 5,
+    topMostFormulas = 5,
+    profile = "orbitrap",
+    elements = siriusElements,
+    splitBatches = FALSE,
+    cores = 4,
+    projectPath = "log/sirius_compounds/output"
+  )
+                  
+  # Filter for minimum explained peaks and SIRIUS score
+  compoundsSIR <- patRoon::filter(compoundsSIR, topMost = 1, minExplainedPeaks = 2)
+
+  # Export results as
+  resultsSIR <- patRoon::as.data.table(compoundsSIR, fGroups = fGroups)
+                  
+  ```
 
 </details>
   
@@ -259,7 +298,7 @@ compoundsMF <-
   )
 
 # Filter for minimum explained peaks and formula score
-compoundsMF <- patRoon::filter(compoundsMF, topMost = 1)
+compoundsMF <- patRoon::filter(compoundsMF, topMost = 1, minExplainedPeaks = 2)
 
 # Export results as
 resultsMF <- patRoon::as.data.table(compoundsMF, fGroups = fGroups)
