@@ -7,6 +7,14 @@ Utilizing patRoon and other tools to perform non-target analysis of high-resolut
 
 This workflow was optimized for LC-ESI-HRMS data with data-dependant acquisition (DDA). Separation was achieved with a 25 minute elution (A = 0.1% fomic acid, B = acetonitrile) and a reverse phase C18 column (100 mm x 2.1 mm). Mass spectrum were acquired with Thermo Q Exactive (Thermo) in ESI+ mode.
 
+## Dependancies
+```
+library(tidyverse)
+library(patRoon)
+library(xcms) # installed by patRoon but often helps if loaded seperately
+library(IPO)
+```
+
 ## Workflow
 
 ### 1. Feature Extraction
