@@ -156,6 +156,19 @@ A table of feature parameters is generated and exported for implementation in Py
 
 Gloaguen, Y., Kirwan, J.A. & Beule, D. 2022. Deep Learning-Assisted Peak Curation for Large-Scale LC-MS Metabolomics. Analytical Chemistry, 94, 4930-4937. https://doi.org/10.1021/acs.analchem.1c02220
 
+#### msPurity
+
+The quality of MS2 spectra can be evaluated by assessing the purity of the MS1 peaks present in the isolation window. If chimeric peaks are detected, the score will be reduced and the feature can be ommited from further analysis, due to poor MS2 spectrum quality. The authors recommend a minimum score of 0.5 to continue with peak annotation and identification.
+
+<details>
+  <summary>Show code</summary>
+
+Code not yet implemented or tested. -DS
+
+</details>
+
+Lawson, T.N., Weber, R.J.M., Jones, M.R., Chetwynd, A.J., Rodrı́guez-Blanco, G., Di Guida, R., Viant, M.R. & Dunn, W.B. 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry-Based Fragmentation in Metabolomics. Analytical Chemistry, 89, 2432-2439. https://doi.org/10.1021/acs.analchem.6b04358
+
 ### 2. MS Peak Annotation
   
   #### mzR (via patRoon)
