@@ -159,6 +159,8 @@ Gloaguen, Y., Kirwan, J.A. & Beule, D. 2022. Deep Learning-Assisted Peak Curatio
 #### msPurity
 
 The quality of MS2 spectra can be evaluated by assessing the purity of the MS1 peaks present in the isolation window. If chimeric peaks are detected, the score will be reduced and the feature can be ommited from further analysis, due to poor MS2 spectrum quality. The authors recommend a minimum score of 0.5 to continue with peak annotation and identification.
+  
+  It is hypothesised that this may also reduce the number of "noisy" EIC, as the ratio of MS1 peaks could be reduced if there is low abundance of the selected peak.
 
 <details>
   <summary>Show code</summary>
