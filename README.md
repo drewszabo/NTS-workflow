@@ -177,6 +177,7 @@ fGroups <- patRoon::filter(fGroups,
                            removeBlanks = TRUE) # remove blanks here helped the picking of peaks with mzR here 
 
 ```
+</details>
 
 Gloaguen, Y., Kirwan, J.A. & Beule, D. 2022. Deep Learning-Assisted Peak Curation for Large-Scale LC-MS Metabolomics. Analytical Chemistry, 94, 4930-4937. https://doi.org/10.1021/acs.analchem.1c02220
 
