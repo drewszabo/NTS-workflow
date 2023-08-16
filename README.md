@@ -23,6 +23,8 @@ library(IPO)
 
 The ‘Isotopologue Parameter Optimization’ (`IPO`) tool was used to optimise the `xcms` peak picking and alignment parameters.
 
+Not used in final process. IPO was not able to correctly optimise peak picking or grouping for my dataset. Perhaps it will be useful under different LC-HRMS conditions.
+
 <details>
   <summary>Show code</summary>
 
@@ -89,41 +91,38 @@ Using optimised parameters from IPO, all features were extracted from the `.mzML
 
 ```
 # Extract all features
-fList <- patRoon::findFeatures(
-  anaInfo,
-  "xcms3",
-  param = xcms::CentWaveParam(
-    ppm = 18.5,
-    mzdiff = -0.0145,
-    prefilter = c(3, 100),
-    snthresh = 4.4,
-    peakwidth = c(9, 76),
-    noise = 7500
-  )
-)
+fList <- findFeatures(anaInfo, "xcms3",
+                      param = xcms::CentWaveParam(
+                        ppm = 5,
+                        peakwidth = c(10, 60), # half avg peak width - 2x avg peak width
+                        snthresh = 3, # 10 last successful test
+                        prefilter = c(3, 100),
+                        mzCenterFun = "wMean", # from wMeanApex3
+                        integrate = 1L,
+                        mzdiff = 0.005, # minimum difference in m/z dimension required for peaks with overlapping retention times
+                        fitgauss = TRUE, # normally false
+                        noise = 1000
+                      ),
+                      verbose = FALSE)
 
 # Perform feature alignment
-fGroups <-
-  groupFeatures(
-    fList,
-    "xcms3",
-    rtalign = TRUE,
-    loadRawData = TRUE,
-    groupParam = xcms::PeakDensityParam(
-      sampleGroups = anaInfo$group,
-      minFraction = 0,
-      minSamples = 1,
-      bw = 0.87999
-    ),
-    retAlignParam = xcms::ObiwarpParam(
-      gapInit = 0.8416,
-      gapExtend = 2.7,
-      factorDiag = 2,
-      factorGap = 1,
-      response = 1,
-      centerSample = 3
-    )
-  )
+fGroups <- groupFeatures(fList,
+                         "xcms3",
+                         rtalign = TRUE,
+                         loadRawData = TRUE,
+                         groupParam = xcms::PeakDensityParam(sampleGroups = anaInfo$group,
+                                                             minFraction = 0,
+                                                             minSamples = 1,
+                                                             bw = 15, # cranked from 10 due to late eluting big peaks
+                                                             binSize = 0.01), # corrected for misaligned m/z in features
+                         retAlignParam = xcms::ObiwarpParam(center = 2,
+                                                            response = 1,
+                                                            gapInit = 0.3, #0.524 last successful test
+                                                            gapExtend = 2.4, #2.7 last successful test
+                                                            factorDiag = 2,
+                                                            factorGap = 1,
+                                                            binSize = 0.05), # 0.01 last successful test
+                         verbose = FALSE)
 ```
 
 </details>
@@ -141,10 +140,14 @@ Feature groups are filtered for replicate and blank intensity/abundance.
 fGroups <-
   patRoon::filter(
     fGroups,
-    relMinReplicateAbundance = 1,
-    maxReplicateIntRSD = 0.50,
-    blankThreshold = 3,
-    removeBlanks = TRUE
+    absMinReplicateAbundance = NULL, # Minimum feature abundance in a replicate group
+    relMinReplicateAbundance = NULL, # Minimum feature abundance in a replicate group
+    relMinReplicates = NULL, # Minimum feature abundance in different replicates
+    maxReplicateIntRSD = NULL, # Maximum relative standard deviation of feature intensities in a replicate group.
+    relMinAnalyses = NULL, # Minimum feature abundance in all analyses
+    absMinAnalyses = 2,
+    blankThreshold = NULL, # For validation, maybe don't remove blanks ???
+    removeBlanks = FALSE
   )
 ```
 
@@ -153,6 +156,27 @@ fGroups <-
 #### NeatMS
 
 A table of feature parameters is generated and exported for implementation in Python (see Documentation from authors). See [drewszabo/neatms.export](https://www.github.com/drewszabo/ntms.export) for updated code to produce data table that is compatable with this workflow.
+
+<details>
+  <summary>Show code</summary>
+
+```
+# Export aligned feature groups to .csv for NeatMS analysis
+source("https://raw.githubusercontent.com/drewszabo/Rntms/main/create_aligned_table.R")
+feature_dataframe <- create_aligened_features(fGroups)
+
+# Run NeatMS analysis (Python/Jupyter)
+
+# Convert NeatMS results to YAML for filtering
+source("https://raw.githubusercontent.com/drewszabo/Rntms/main/convert_to_yaml.R")
+convert_to_yaml(ntms_results = "neatms_export.csv")
+
+# Filter based on NeatMS prediction model (5621)
+fGroups <- patRoon::filter(fGroups,
+                           checkFeaturesSession = "model_session.yml",
+                           removeBlanks = TRUE) # remove blanks here helped the picking of peaks with mzR here 
+
+```
 
 Gloaguen, Y., Kirwan, J.A. & Beule, D. 2022. Deep Learning-Assisted Peak Curation for Large-Scale LC-MS Metabolomics. Analytical Chemistry, 94, 4930-4937. https://doi.org/10.1021/acs.analchem.1c02220
 
@@ -184,39 +208,41 @@ Lawson, T.N., Weber, R.J.M., Jones, M.R., Chetwynd, A.J., Rodrı́guez-Blanco, G
 
 ```
 # Set parameters (mz window)
-avgFeatParams <- getDefAvgPListParams(
-  clusterMzWindow = 0.002,
-  topMost = 250,
-  minIntensityPre = 500,
-  minIntensityPost = 1000,
-  method = "hclust",
-  pruneMissingPrecursorMS = TRUE,
-  retainPrecursorMSMS = TRUE
-)
+avgFeatParams <- getDefAvgPListParams(clusterMzWindow = 0.005,
+                                      topMost = 250
+                                      #method = "distance" # default "hclust" uses clustered height
+                                      )
+
+precRules <- getDefIsolatePrecParams(maxIsotopes = 4,
+                                     mzDefectRange = c(-0.1, 0.1)
+                                     )
 
 
 # Calculate MS and MSMS peak lists from suspect screening
-mslists <- generateMSPeakLists(
-  fGroups,
-  "mzr",
-  maxMSRtWindow = 15,
-  precursorMzWindow = 0.4,
-  topMost = NULL,
-  avgFeatParams = avgFeatParams,
-  avgFGroupParams = avgFeatParams
-)
+
+time.mzr <- system.time({
+  mslists <- generateMSPeakLists(
+    fGroups,
+    "mzr",
+    maxMSRtWindow = 5,
+    precursorMzWindow = 0.2, # +/- 0.2 Da = 0.4 Da
+    topMost = NULL,
+    avgFeatParams = avgFeatParams,
+    avgFGroupParams = avgFeatParams
+  )
+})
 
 
 # Filtering only top 99% MSMS peaks based on relative abundance
-mslists <- patRoon::filter(
-  mslists,
-  absMSIntThr = 1000,
-  relMSMSIntThr = 0.01,
-  withMSMS = TRUE,
-  minMSMSPeaks = 1,
-  retainPrecursorMSMS = TRUE,
-  isolatePrec = TRUE
-)
+
+mslists <- patRoon::filter(mslists,
+                           absMSIntThr = 1000,
+                           relMSMSIntThr = 0.05, # trying to reduce noise (helped with at least 1)
+                           withMSMS = TRUE,
+                           minMSMSPeaks = 1,
+                           retainPrecursorMSMS = TRUE,
+                           isolatePrec = precRules, # Issue 87 fixed 24-07-23
+                           )
 ```
 
 </details>
@@ -233,17 +259,27 @@ Requires latest database `.msp` download from MassBank repo
   <summary>Show code</summary>
 
 ```
-compoundsMB <-
-  generateCompounds(
-    fGroupsSusp,
-    mslists,
-    "library",
-    adduct = "[M+H]+",
-    MSLibrary = mslibrary,
-    minSim = 0.05,
-    absMzDev = 0.01,
-    spectrumType = "MS2"
-  )
+mslibrary <- loadMSLibrary("C:/Data/MassBank/MassBank_NIST.msp", "msp")
+
+simParam <- getDefSpecSimParams(
+  absMzDev = 0.02 # 20 mDa difference for MS2 spectra
+  ) # https://rickhelmus.github.io/patRoon/reference/specSimParams.html
+
+time.MassBank <- system.time({
+  compoundsMB <-
+    generateCompounds(
+      fGroupsSusp,
+      mslists,
+      "library",
+      adduct = "[M+H]+",
+      MSLibrary = mslibrary,
+      minSim = 0.50,
+      absMzDev = 0.05,
+      spectrumType = "MS2",
+      checkIons = "adduct",
+      specSimParams = simParam # increase bin size
+    )
+})
 
 # Filter for minimum explained peaks and formula score
 compoundsMB <- patRoon::filter(compoundsMB, topMost = 1, minExplainedPeaks = 2)
@@ -262,24 +298,25 @@ Currently working with SIRIUS v5.6.3. Limiting the cores may not be necessary bu
 <summary>Show code</summary>
 
 ```
-  siriusElements <- "CHONFP[8]B[11]Si[9]S[12]Cl[18]Se[2]Br[10]I[6]K[1]As[2]Na[1]"
-    
+time.SIRIUS <- system.time({
   compoundsSIR <-
-  generateCompounds(
-    fGroupsTest,
-    mslists,
-    "sirius",
-    relMzDev = 5,
-    adduct = "[M+H]+",
-    fingerIDDatabase = "all",
-    topMost = 5,
-    topMostFormulas = 5,
-    profile = "orbitrap",
-    elements = siriusElements,
-    splitBatches = FALSE,
-    cores = 4,
-    projectPath = "log/sirius_compounds/output"
-  )
+    generateCompounds(
+      fGroupsSusp,
+      mslists,
+      "sirius",
+      relMzDev = 5,
+      adduct = "[M+H]+",
+      formulaDatabase = "pubchem",
+      topMost = 5,
+      topMostFormulas = 10, # from 5 - hopefully increase the number of form used to calculate structures
+      profile = "orbitrap",
+      splitBatches = FALSE,
+      cores = 4,
+      elements = "CHONPSFClBr",
+      extraOptsFormula = "--ppm-max-ms2=50",
+      verbose = TRUE
+    )
+})
                   
   # Filter for minimum explained peaks and SIRIUS score
   compoundsSIR <- patRoon::filter(compoundsSIR, topMost = 1, minExplainedPeaks = 2)
@@ -299,18 +336,21 @@ Currently working with SIRIUS v5.6.3. Limiting the cores may not be necessary bu
   <summary>Show code</summary>
 
 ```
-compoundsMF <-
-  generateCompounds(
-    fGroupsSusp,
-    mslists,
-    "metfrag",
-    method = "CL",
-    topMost = 5,
-    dbRelMzDev = 25,
-    fragRelMzDev = 25,
-    adduct = "[M+H]+",
-    database = "pubchemlite"
-  )
+time.MetFrag <- system.time({
+  compoundsMF <-
+    generateCompounds(
+      fGroupsSusp,
+      mslists,
+      "metfrag",
+      method = "CL",
+      topMost = 5,
+      dbRelMzDev = 5,
+      fragAbsMzDev = 0.02, # changed from 5 ppm (relative) to equal MassBank
+      adduct = "[M+H]+",
+      database = "pubchemlite",
+      maxCandidatesToStop = 2500 # resource intensive - consider using PubChemLite to reduce #candidates
+    )
+})
 
 # Filter for minimum explained peaks and formula score
 compoundsMF <- patRoon::filter(compoundsMF, topMost = 1, minExplainedPeaks = 2)
