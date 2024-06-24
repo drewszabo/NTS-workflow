@@ -22,8 +22,8 @@ library(IPO)
 #### IPO
 
 The ‘Isotopologue Parameter Optimization’ (`IPO`) tool was used to optimise the `xcms` peak picking and alignment parameters.
-
-Not used in final process. IPO was not able to correctly optimise peak picking or grouping for my dataset. Perhaps it will be useful under different LC-HRMS conditions.
+For Orbitrap, the noise level should be set rather high for optimization, then reduced in peak picking to maximise features.
+General rule of thumb is to choose peak witdths between 0.5 - 3 average peak width. Use basic EIC tools to find average peak widths.
 
 <details>
   <summary>Show code</summary>
@@ -43,7 +43,7 @@ peakpickingParameters$max_peakwidth <- c(30, 90)
 peakpickingParameters$ppm <- c(5,40)
 peakpickingParameters$mzdiff <- c(-0.01, -0.001)
 peakpickingParameters$snthresh <- c(3, 17)
-peakpickingParameters$noise <- c(0, 5000)
+peakpickingParameters$noise <- 500000
 
 # Run Experiments
 time.xcmsSet <- system.time({ # measuring time
