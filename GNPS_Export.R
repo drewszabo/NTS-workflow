@@ -6,7 +6,6 @@ generateGNPSInfo <- function(fGroups, mslists, path) {
   
   # Check inputs for validity
   if (!"xdata" %in% slotNames(fGroups)) stop("fGroups does not contain an xdata slot")
-  if (!"data.table" %in% class(mslists)) stop("mslists must be a data.table")
   if (!dir.exists(dirname(path))) stop("Output path does not exist")
   
   # Generate feature table
