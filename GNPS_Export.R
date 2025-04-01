@@ -13,7 +13,7 @@ generateGNPSInfo <- function(fGroups, mslists, path) {
   groups <- unique(resultsmslists$group)
   
   fileConn <- file(paste0(path, "output_gnps.mgf"), "w")
-  writeLines(paste0("COM=Exported by Drew Szabo on ", Sys.time()), fileConn)
+  writeLines(paste0("COM=Exported by ", Sys.getenv("USERNAME"), " on ", Sys.time()), fileConn)
   
   for (peak_ID in groups) {
     feature_list <- dataTable[dataTable$peak_ID == peak_ID, ]
