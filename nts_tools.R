@@ -137,16 +137,17 @@ import_neatms <- function(ntms_results = "ntms_export.csv", anaInfo = anaInfo, f
 # Import results
 neatms_export <- read.csv(ntms_results)
 
-  if (missing(feature_dataframe)) stop("feature_dataframe must be provided")
-  if (missing(anaInfo)) stop("anaInfo must be provided")
-
 # Select relevant columns from feature_dataframe
 feature_dataframe <- feature_dataframe %>%
   dplyr::select(feature_id, into)
 
+    if (missing(feature_dataframe)) stop("feature_dataframe must be provided")
+  if (missing(anaInfo)) stop("anaInfo must be provided")
+
 # Rename and transform columns in NeatMS export
 neatms_export <- neatms_export %>%
   dplyr::rename(
+    feature_id = feature.id
     mz = m.z,
     maxo = height,
     into = area,
