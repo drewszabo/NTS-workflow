@@ -132,7 +132,7 @@ return(feature_dataframe)
 
 
 
-import_neatms <- function(ntms_results = "ntms_export.csv", feature_dataframe = feature_dataframe, yaml_path = "model_session.yml"){
+import_neatms <- function(ntms_results = "ntms_export.csv", anaInfo = anaInfo, feature_dataframe = feature_dataframe, yaml_path = "model_session.yml"){
 
 # Import results
 neatms_export <- read.csv(ntms_results)
