@@ -137,30 +137,37 @@ import_neatms <- function(ntms_results = "ntms_export.csv", feature_dataframe = 
 # Import results
 neatms_export <- read.csv(ntms_results)
 
-# Get feature_dataframe
+# Load NeatMS export data
+neatms_export <- read.csv(ntms_results)
 
+# Select relevant columns from feature_dataframe
 feature_dataframe <- feature_dataframe %>%
   dplyr::select(feature_id, into)
-  
 
-# Re-allocate feature_id from feature_dataframe based on "into" variable
+# Rename and transform columns in NeatMS export
 neatms_export <- neatms_export %>%
-  dplyr::rename(mz = m.z,
-                maxo = height,
-                into = area,
-                rt = retention.time,
-                analysis = sample) %>%
-  dplyr::mutate(rt = rt*60)
+  dplyr::rename(
+    mz = m.z,
+    maxo = height,
+    into = area,
+    rt = retention.time,
+    analysis = sample
+  ) %>%
+  dplyr::mutate(rt = rt * 60)  # Convert retention time from minutes to seconds
 
+# Join metadata from anaInfo and feature_dataframe
 neatms_export <- neatms_export %>%
-  dplyr::left_join(dplyr::select(anaInfo, group, analysis)) %>%
+  dplyr::left_join(dplyr::select(anaInfo, group, analysis), by = "analysis") %>%
   dplyr::left_join(feature_dataframe, by = "into")
 
-# Categorize features by quality
+# Summarize feature quality by group
 neatms_export <- neatms_export %>%
   dplyr::group_by(feature_ID, group) %>%
-  dplyr::summarise(quality = ifelse("High_quality" %in% label, TRUE, FALSE),
-            feature = feature_id[1])
+  dplyr::summarise(
+    quality = any(label == "High_quality"),
+    feature = dplyr::first(feature_id),
+    .groups = "drop"
+  )
 
 write.csv(neatms_export, "neatms_export.csv", row.names = FALSE)
 
