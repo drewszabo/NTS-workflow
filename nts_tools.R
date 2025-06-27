@@ -137,8 +137,8 @@ import_neatms <- function(ntms_results = "ntms_export.csv", feature_dataframe = 
 # Import results
 neatms_export <- read.csv(ntms_results)
 
-# Load NeatMS export data
-neatms_export <- read.csv(ntms_results)
+  if (missing(feature_dataframe)) stop("feature_dataframe must be provided")
+  if (missing(anaInfo)) stop("anaInfo must be provided")
 
 # Select relevant columns from feature_dataframe
 feature_dataframe <- feature_dataframe %>%
@@ -160,6 +160,8 @@ neatms_export <- neatms_export %>%
   dplyr::left_join(dplyr::select(anaInfo, group, analysis), by = "analysis") %>%
   dplyr::left_join(feature_dataframe, by = "into")
 
+write.csv(neatms_export, "neatms_export.csv", row.names = FALSE)
+  
 # Summarize feature quality by group
 neatms_export <- neatms_export %>%
   dplyr::group_by(feature_ID, group) %>%
@@ -169,7 +171,7 @@ neatms_export <- neatms_export %>%
     .groups = "drop"
   )
 
-write.csv(neatms_export, "neatms_export.csv", row.names = FALSE)
+
 
 # Filter features with <1 "high-quality"
 removeFully <- neatms_export %>%
