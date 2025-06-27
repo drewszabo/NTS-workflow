@@ -132,10 +132,16 @@ return(feature_dataframe)
 
 
 
-import_neatms <- function(ntms_results = "ntms_export.csv", yaml_path = "model_session.yml"){
+import_neatms <- function(ntms_results = "ntms_export.csv", feature_dataframe = feature_dataframe, yaml_path = "model_session.yml"){
 
 # Import results
 neatms_export <- read.csv(ntms_results)
+
+# Get feature_dataframe
+
+feature_dataframe <- feature_dataframe %>%
+  dplyr::select(feature_id, into)
+  
 
 # Re-allocate feature_id from feature_dataframe based on "into" variable
 neatms_export <- neatms_export %>%
@@ -147,15 +153,12 @@ neatms_export <- neatms_export %>%
   dplyr::mutate(rt = rt*60)
 
 neatms_export <- neatms_export %>%
-  dplyr::left_join(anaInfo) %>%
-  dplyr::select(-path, -blank)
-
-neatms_export$feature_id <- 
-  feature_dataframe$feature_id[match(round(neatms_export$into,2), round(feature_dataframe$into,2))]
+  dplyr::left_join(dplyr::select(anaInfo, group, analysis)) %>%
+  dplyr::left_join(feature_dataframe, by = "into")
 
 # Categorize features by quality
 neatms_export <- neatms_export %>%
-  dplyr::group_by(feature.ID, group) %>%
+  dplyr::group_by(feature_ID, group) %>%
   dplyr::summarise(quality = ifelse("High_quality" %in% label, TRUE, FALSE),
             feature = feature_id[1])
 
