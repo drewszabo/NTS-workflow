@@ -147,7 +147,7 @@ feature_dataframe <- feature_dataframe %>%
 # Rename and transform columns in NeatMS export
 neatms_export <- neatms_export %>%
   dplyr::rename(
-    feature_id = feature.id
+    feature_id = feature.id,
     mz = m.z,
     maxo = height,
     into = area,
