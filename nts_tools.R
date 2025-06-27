@@ -160,7 +160,7 @@ neatms_export <- neatms_export %>%
   dplyr::left_join(dplyr::select(anaInfo, group, analysis), by = "analysis") %>%
   dplyr::left_join(feature_dataframe, by = "into")
 
-write.csv(neatms_export, "neatms_export.csv", row.names = FALSE)
+write.csv(neatms_export, "neatms_export_aligned.csv", row.names = FALSE)
   
 # Summarize feature quality by group
 neatms_export <- neatms_export %>%
