@@ -159,6 +159,8 @@ neatms_export <- neatms_export %>%
   dplyr::summarise(quality = ifelse("High_quality" %in% label, TRUE, FALSE),
             feature = feature_id[1])
 
+write.csv(neatms_export, "neatms_export.csv", row.names = FALSE)
+
 # Filter features with <1 "high-quality"
 removeFully <- neatms_export %>%
   dplyr::group_by(feature) %>%
