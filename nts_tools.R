@@ -268,7 +268,7 @@ generateGNPSInfo <- function(fGroups, mslists, path) {
                  "MSLEVEL=2",
                  paste0("RTINSECONDS=", ret),
                  paste0("PEPMASS=", mz),
-                 paste0("SCANS=", sub("^FT", "", feature_list$Row.names)),
+                 paste0("SCANS=", as.integer(sub("^FT", "", feature_list$Row.names))),
                  paste0("Num peaks=", numPeaksMS2),
                  apply(MS2peaks, 1, function(x) paste(round(x[1], 6), round(x[2], 0), sep = " ")),
                  "END IONS", ""), fileConn)
