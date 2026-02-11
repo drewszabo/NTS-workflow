@@ -230,7 +230,7 @@ generateGNPSInfo <- function(fGroups, mslists, path) {
   dataTable <- dataTable[, !(colnames(dataTable) %in% c("peakidx"))]
   dataTable$peak_ID <- peakID
   
-  write.table(dataTable, paste0(path, "output_gnps.csv"), sep = "\t", quote = FALSE, row.names = FALSE)
+  write.table(dataTable, paste0(path, "output_gnps.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
   
   resultsmslists <- patRoon::as.data.table(mslists)
   groups <- unique(resultsmslists$group)
