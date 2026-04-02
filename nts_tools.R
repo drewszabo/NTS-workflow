@@ -236,7 +236,7 @@ generateGNPSInfo <- function(fGroups = fGroups, mslists = mslists, polarity = c(
   groups <- unique(resultsmslists$group)
   
   fileConn <- file(paste0(path, "output_gnps.mgf"), "w")
-  writeLines(paste0("COM=Exported by ", Sys.getenv("USERNAME"), " on ", Sys.time(), " using drewszabo/NTS-workflow"), fileConn, append = TRUE)
+  writeLines(paste0("COM=Exported by ", Sys.getenv("USERNAME"), " on ", Sys.time(), " using drewszabo/NTS-workflow"), fileConn)
   
   for (peak_ID in groups) {
     feature_list <- dataTable[dataTable$peak_ID == peak_ID, ]
