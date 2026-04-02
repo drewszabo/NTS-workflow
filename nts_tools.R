@@ -221,7 +221,7 @@ write(yaml_object, file = yaml_path)
 
 
 
-generateGNPSInfo <- function(fGroups, mslists, path) {
+generateGNPSInfo <- function(fGroups = fGroups, mslists = mslists, polarity = c("positive", "negative"), path) {
   # Generate feature table
   featuresDef <- xcms::featureDefinitions(fGroups@xdata)
   featuresIntensities <- xcms::featureValues(fGroups@xdata, value = "into")
@@ -229,7 +229,6 @@ generateGNPSInfo <- function(fGroups, mslists, path) {
   dataTable <- merge(featuresDef, featuresIntensities, by = 0, all = TRUE)
   dataTable <- dataTable[, !(colnames(dataTable) %in% c("peakidx"))]
   dataTable$peak_ID <- peakID
-  dataTable$polarity <- ifelse(fGroups@xdata@featureData@data[["polarity"]] == 1, "positive", "negative")
   
   write.table(dataTable, paste0(path, "output_gnps.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
   
@@ -257,7 +256,7 @@ generateGNPSInfo <- function(fGroups, mslists, path) {
                  "MSLEVEL=1",
                  paste0("RTINSECONDS=", ret),
                  paste0("PEPMASS=", mz),
-                 paste0("CHARGE=", ifelse(feature_list$polarity == "positive", "1+", "1-")),
+                 paste0("CHARGE=", ifelse(polarity == "positive", "1+", "1-")),
                  paste0("SCANS=", as.integer(sub("^FT", "", feature_list$Row.names))),
                  paste0("Num peaks=", numPeaksMS1),
                  apply(MS1peaks, 1, function(x) paste(round(x[1], 6), round(x[2], 0), sep = " ")),
