@@ -308,7 +308,7 @@ generateSIRIUSmgf <- function(fGroups = fGroups, mslists = mslists, polarity = c
     
     # MS1 Block
     writeLines(c("BEGIN IONS",
-                 paste0("FEATURE_ID=", feature_list$Row.names),
+                 paste0("FEATURE_ID=", peak_ID),
                  paste0("PEPMASS=", mz),
                  "MSLEVEL=1",
                  paste0("RTINSECONDS=", ret),
@@ -318,7 +318,7 @@ generateSIRIUSmgf <- function(fGroups = fGroups, mslists = mslists, polarity = c
     
     # MS2 Block
     writeLines(c("BEGIN IONS",
-                 paste0("FEATURE_ID=", feature_list$Row.names),
+                 paste0("FEATURE_ID=", peak_ID),
                  paste0("PEPMASS=", mz),
                  "MSLEVEL=2",
                  paste0("RTINSECONDS=", ret),
