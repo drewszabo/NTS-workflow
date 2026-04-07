@@ -292,7 +292,7 @@ generateSIRIUSmgf <- function(fGroups = fGroups, mslists = mslists, polarity = c
   resultsmslists <- patRoon::as.data.table(mslists)
   groups <- unique(resultsmslists$group)
   
-  fileConn <- file(paste0(path, "output_gnps.mgf"), "w")
+  fileConn <- file(paste0(path, "output_sirius.mgf"), "w")
   writeLines(paste0("COM=Exported by ", Sys.getenv("USERNAME"), " on ", format(Sys.time(), "%d%m%y %H%M")), fileConn)
   
   for (peak_ID in groups) {
