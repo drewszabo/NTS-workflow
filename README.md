@@ -1,11 +1,7 @@
-# NTS-workflow
+# ntsTools
 
 ## Description
 Utilizing patRoon and other tools to perform non-target analysis of high-resolution mass spectrometry data
-
-## Scope
-
-This workflow was optimized for LC-ESI-HRMS data with data-dependant acquisition (DDA). Separation was achieved with a 25 minute elution (A = 0.1% fomic acid, B = acetonitrile) and a reverse phase C18 column (100 mm x 2.1 mm). Mass spectrum were acquired with Thermo Q Exactive (Thermo) in ESI+ mode.
 
 ## Dependancies
 ```
@@ -18,69 +14,6 @@ library(IPO)
 ## Workflow
 
 ### 1. Feature Extraction
-
-#### IPO
-
-The ‘Isotopologue Parameter Optimization’ (`IPO`) tool was used to optimise the `xcms` peak picking and alignment parameters.
-For Orbitrap, the noise level should be set rather high for optimization, then reduced in peak picking to maximise features.
-General rule of thumb is to choose peak witdths between 0.5 - 3 average peak width. Use basic EIC tools to find average peak widths.
-
-<details>
-  <summary>Show code</summary>
-
-```
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-
-BiocManager::install("IPO")
-
-# Get Default XCMS Parameters
-peakpickingParameters <- getDefaultXcmsSetStartingParams('centWave')
-
-# Set New Optimisation Parameters
-peakpickingParameters$min_peakwidth <- c(6, 18)
-peakpickingParameters$max_peakwidth <- c(30, 90)
-peakpickingParameters$ppm <- c(5,40)
-peakpickingParameters$mzdiff <- c(-0.01, -0.001)
-peakpickingParameters$snthresh <- c(3, 17)
-peakpickingParameters$noise <- 500000
-
-# Run Experiments
-time.xcmsSet <- system.time({ # measuring time
-  resultPeakpicking <- 
-    optimizeXcmsSet(files = datafiles[1:6], 
-                    params = peakpickingParameters, 
-                    nSlaves = 1, 
-                    subdir = NULL,
-                    plot = TRUE)
-})
-
-# Show/Save Results
-resultPeakpicking$best_settings$result
-optimizedXcmsSetObject <- resultPeakpicking$best_settings$xset
-
-# Retention Time / Alignment Optimisation
-retcorGroupParameters <- getDefaultRetGroupStartingParams()
-retcorGroupParameters$profStep <- 1
-retcorGroupParameters$gapExtend <- 2.7
-
-time.RetGroup <- system.time({ # measuring time
-  resultRetcorGroup <-
-    optimizeRetGroup(xset = optimizedXcmsSetObject, 
-                     params = retcorGroupParameters, 
-                     nSlaves = 1, 
-                     subdir = NULL,
-                     plot = TRUE)
-})
-
-# Display All Optimisation Settings
-writeRScript(resultPeakpicking$best_settings$parameters, 
-             resultRetcorGroup$best_settings)
-```
-
-</details>
-
-Libiseller, G., Dvorzak, M., Kleb, U., Gander, E., Eisenberg, T., Madeo, F., Neumann, S., Trausinger, G., Sinner, F., Pieber, T. & Magnes, C. 2015. IPO: a tool for automated optimization of XCMS parameters. BMC Bioinformatics, 16, 118. https://doi.org/10.1186/s12859-015-0562-8
 
 #### XCMS (via patRoon)
 
@@ -181,20 +114,6 @@ fGroups <- patRoon::filter(fGroups,
 
 Gloaguen, Y., Kirwan, J.A. & Beule, D. 2022. Deep Learning-Assisted Peak Curation for Large-Scale LC-MS Metabolomics. Analytical Chemistry, 94, 4930-4937. https://doi.org/10.1021/acs.analchem.1c02220
 
-#### msPurity
-
-The quality of MS2 spectra can be evaluated by assessing the purity of the MS1 peaks present in the isolation window. If chimeric peaks are detected, the score will be reduced and the feature can be ommited from further analysis, due to poor MS2 spectrum quality. The authors recommend a minimum score of 0.5 to continue with peak annotation and identification.
-  
-  It is hypothesised that this may also reduce the number of "noisy" EIC, as the ratio of MS1 peaks could be reduced if there is low abundance of the selected peak.
-
-<details>
-  <summary>Show code</summary>
-
-Code not yet implemented or tested. -DS
-
-</details>
-
-Lawson, T.N., Weber, R.J.M., Jones, M.R., Chetwynd, A.J., Rodrı́guez-Blanco, G., Di Guida, R., Viant, M.R. & Dunn, W.B. 2017. msPurity: Automated Evaluation of Precursor Ion Purity for Mass Spectrometry-Based Fragmentation in Metabolomics. Analytical Chemistry, 89, 2432-2439. https://doi.org/10.1021/acs.analchem.6b04358
 
 ### 2. MS Peak Annotation
   
@@ -287,77 +206,6 @@ compoundsMB <- patRoon::filter(compoundsMB, topMost = 1, minExplainedPeaks = 2)
 
 # Export results as
 resultsMB <- patRoon::as.data.table(compoundsMB, fGroups = fGroups)
-```
-
-</details>
-
-#### SIRIUS CSIFingerID
-  
-Currently working with SIRIUS v5.6.3. Limiting the cores may not be necessary but can help if you need to use your computer while processing the data. Using the projectPath variable is also not necessary, although I find it useful to browse the raw SIRIUS results for troubleshooting.
-  
-<details>
-<summary>Show code</summary>
-
-```
-time.SIRIUS <- system.time({
-  compoundsSIR <-
-    generateCompounds(
-      fGroupsSusp,
-      mslists,
-      "sirius",
-      relMzDev = 5,
-      adduct = "[M+H]+",
-      formulaDatabase = "pubchem",
-      topMost = 5,
-      topMostFormulas = 10, # from 5 - hopefully increase the number of form used to calculate structures
-      profile = "orbitrap",
-      splitBatches = FALSE,
-      cores = 4,
-      elements = "CHONPSFClBr",
-      extraOptsFormula = "--ppm-max-ms2=50",
-      verbose = TRUE
-    )
-})
-                  
-  # Filter for minimum explained peaks and SIRIUS score
-  compoundsSIR <- patRoon::filter(compoundsSIR, topMost = 1, minExplainedPeaks = 2)
-
-  # Export results as
-  resultsSIR <- patRoon::as.data.table(compoundsSIR, fGroups = fGroups)
-                  
-  ```
-
-</details>
-  
-#### MetFrag
-  
-  Current issues with mass accuracy have required relatively high ppm deviations.
-  
-  <details>
-  <summary>Show code</summary>
-
-```
-time.MetFrag <- system.time({
-  compoundsMF <-
-    generateCompounds(
-      fGroupsSusp,
-      mslists,
-      "metfrag",
-      method = "CL",
-      topMost = 5,
-      dbRelMzDev = 5,
-      fragAbsMzDev = 0.02, # changed from 5 ppm (relative) to equal MassBank
-      adduct = "[M+H]+",
-      database = "pubchemlite",
-      maxCandidatesToStop = 2500 # resource intensive - consider using PubChemLite to reduce #candidates
-    )
-})
-
-# Filter for minimum explained peaks and formula score
-compoundsMF <- patRoon::filter(compoundsMF, topMost = 1, minExplainedPeaks = 2)
-
-# Export results as
-resultsMF <- patRoon::as.data.table(compoundsMF, fGroups = fGroups)
 ```
 
 </details>
