@@ -13,6 +13,7 @@ generateGNPSInfo <- function(fGroups = fGroups, mslists = mslists, polarity = c(
   featuresDef <- featureDefinitions(fGroups@xdata)
   featuresIntensities <- featureValues(fGroups@xdata, value = "into")
   peakID <- as.character(colnames(fGroups@groups))
+  
   dataTable <- merge(featuresDef, featuresIntensities, by = 0, all = TRUE)
   dataTable <- dataTable[, !(colnames(dataTable) %in% c("peakidx"))]
   dataTable$peak_ID <- peakID
@@ -81,30 +82,29 @@ generateSIRIUSmgf <- function(fGroups = fGroups, mslists = mslists, polarity = c
   featuresDef <- featureDefinitions(fGroups@xdata)
   featuresIntensities <- featureValues(fGroups@xdata, value = "into")
   peakID <- as.character(colnames(fGroups@groups))
+  
   dataTable <- merge(featuresDef, featuresIntensities, by = 0, all = TRUE)
   dataTable <- dataTable[, !(colnames(dataTable) %in% c("peakidx"))]
   dataTable$peak_ID <- peakID
   
   resultsmslists <- patRoon::as.data.table(mslists)
-  groups <- unique(resultsmslists$group)
+  groups_list <- unique(resultsmslists$group)
   
   fileConn <- file(paste0(path, "output_sirius.mgf"), "w")
   writeLines(paste0("COM=Exported by ", Sys.getenv("USERNAME"), " on ", format(Sys.time(), "%d%m%y %H%M")), fileConn)
   
-  for (peak_ID in groups) {
-    feature_list <- dataTable[dataTable$peak_ID == peak_ID, ]
-    peaks <- resultsmslists[group == ..peak_ID]
-    MS1peaks <- peaks[type == "MS", .(mz, intensity)]
-    MS2peaks <- peaks[type == "MSMS", .(mz, intensity)]
+  for (this_group in groups_list) {
+    feature_row <- dataTable[dataTable$peak_ID == this_group, ]
+    peaks_subset <- resultsmslists[resultsmslists$group == this_group, ]
+    MS1peaks <- peaks_subset[type == "MS", .(mz, intensity)]
+    MS2peaks <- peaks_subset[type == "MSMS", .(mz, intensity)]
     
-    ret <- round(feature_list$rtmed, 2)
-    mz <- round(feature_list$mzmed, 4)
-    numPeaksMS1 <- nrow(MS1peaks)
-    numPeaksMS2 <- nrow(MS2peaks)
+    ret <- round(feature_row$rtmed, 2)
+    mz <- round(feature_row$mzmed, 4)
     
     # MS1 Block
     writeLines(c("BEGIN IONS",
-                 paste0("FEATURE_ID=", peak_ID),
+                 paste0("FEATURE_ID=", this_group),
                  paste0("PEPMASS=", mz),
                  "MSLEVEL=1",
                  paste0("RTINSECONDS=", ret),
@@ -114,7 +114,7 @@ generateSIRIUSmgf <- function(fGroups = fGroups, mslists = mslists, polarity = c
     
     # MS2 Block
     writeLines(c("BEGIN IONS",
-                 paste0("FEATURE_ID=", peak_ID),
+                 paste0("FEATURE_ID=", this_group),
                  paste0("PEPMASS=", mz),
                  "MSLEVEL=2",
                  paste0("RTINSECONDS=", ret),
