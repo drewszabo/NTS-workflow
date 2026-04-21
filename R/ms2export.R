@@ -19,7 +19,7 @@ generateGNPSInfo <- function(fGroups = fGroups, mslists = mslists, polarity = c(
   
   write.table(dataTable, paste0(path, "output_gnps.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
   
-  resultsmslists <- as.data.table(mslists)
+  resultsmslists <- patRoon::as.data.table(mslists)
   groups <- unique(resultsmslists$group)
   
   fileConn <- file(paste0(path, "output_gnps.mgf"), "w")
@@ -85,7 +85,7 @@ generateSIRIUSmgf <- function(fGroups = fGroups, mslists = mslists, polarity = c
   dataTable <- dataTable[, !(colnames(dataTable) %in% c("peakidx"))]
   dataTable$peak_ID <- peakID
   
-  resultsmslists <- as.data.table(mslists)
+  resultsmslists <- patRoon::as.data.table(mslists)
   groups <- unique(resultsmslists$group)
   
   fileConn <- file(paste0(path, "output_sirius.mgf"), "w")
