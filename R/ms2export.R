@@ -27,7 +27,7 @@ generateGNPSInfo <- function(fGroups = fGroups, mslists = mslists, polarity = c(
   
   for (peak_ID in groups) {
     feature_list <- dataTable[dataTable$peak_ID == peak_ID, ]
-    peaks <- resultsmslists[group == peak_ID]
+    peaks <- resultsmslists[group == ..peak_ID]
     MS1peaks <- peaks[type == "MS", .(mz, intensity)]
     MS2peaks <- peaks[type == "MSMS", .(mz, intensity)]
     
@@ -93,7 +93,7 @@ generateSIRIUSmgf <- function(fGroups = fGroups, mslists = mslists, polarity = c
   
   for (peak_ID in groups) {
     feature_list <- dataTable[dataTable$peak_ID == peak_ID, ]
-    peaks <- resultsmslists[group == peak_ID]
+    peaks <- resultsmslists[group == ..peak_ID]
     MS1peaks <- peaks[type == "MS", .(mz, intensity)]
     MS2peaks <- peaks[type == "MSMS", .(mz, intensity)]
     
